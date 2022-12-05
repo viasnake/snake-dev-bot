@@ -23,7 +23,7 @@ async def on_ready():
 
 
 @bot.command()
-async def ai(ctx, prompt):
+async def ai(ctx, *, prompt):
     print("prompt: " + prompt)
     async with aiohttp.ClientSession() as session:
         async with session.post(
