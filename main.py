@@ -24,7 +24,12 @@ async def write_csv(content):
 
 @bot.event
 async def on_ready():
-    print('ready')
+    print('Logged in as')
+    print(bot.user.name)
+    print(bot.user.id)
+    print(discord.__version__)
+    print('------')
+    print('Ready!')
 
 
 @bot.command()
