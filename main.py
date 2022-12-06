@@ -143,5 +143,11 @@ async def invite(ctx):
     await ctx.message.add_reaction('✅')
 
 
+@bot.command()
+async def version(ctx):
+    await ctx.message.add_reaction('👀')
+    await ctx.send('???')
+    await ctx.message.remove_reaction('👀', bot.user)
+    await ctx.message.add_reaction('✅')
 
 bot.run(os.environ['DISCORD_BOT_TOKEN'])
