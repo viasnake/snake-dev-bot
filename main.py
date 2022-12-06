@@ -51,6 +51,13 @@ async def on_ready():
 async def ai(ctx, *, prompt):
     await ctx.message.add_reaction('👀')
     print('Prompt: ' + prompt)
+
+    if len(prompt) >= 128:
+        await ctx.reply('Error: 128文字以上だよ({len(prompt)}文字)')
+        await ctx.message.remove_reaction('👀', bot.user)
+        await ctx.message.add_reaction('❌')
+        return
+
     if not prompt.endswith(('。', '．', '.', '․', '․', '、', '，', ',', '！', '？', '!', '?', '︙', '︰', '…', '‥')):
         prompt = await add_period(prompt)
         print('Modified Prompt: ' + prompt)
