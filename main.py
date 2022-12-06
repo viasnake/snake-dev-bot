@@ -31,6 +31,42 @@ async def add_period(text):
     return text
 
 
+async def get_answer(prompt, model='text-davinci-003', max_tokens=512, temperature=0.9, top_p=1, n=1):
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            'https://api.openai.com/v1/completions',
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + os.environ['OPENAI_API_KEY']
+            },
+            json={
+                'model': model,
+                'prompt': prompt,
+                'max_tokens': max_tokens,
+                'temperature': temperature,
+                'top_p': top_p,
+                'n': n
+            }
+        ) as response:
+            print('Response_status: ' + str(response.status))
+            if response.status == 200:
+                data = await response.json()
+                reply = [
+                    data['created'],
+                    data['model'],
+                    prompt,
+                    data['choices'][0]['text'],
+                    data['choices'][0]['finish_reason'],
+                    data['usage']['prompt_tokens'],
+                    data['usage']['completion_tokens'],
+                    data['usage']['total_tokens']
+                ]
+                print('Reply: ' + reply[3])
+                return reply
+            else:
+                print('Error: ' + str(response.status))
+                return None
+
 @bot.event
 async def on_ready():
     print('Logged in as')
@@ -49,8 +85,11 @@ async def on_ready():
 
 @bot.event
 async def on_command_error(ctx, error):
-    await ctx.message.add_reaction('❌')
-    await ctx.reply(f'Error: ぬるぽ({str(error)})')
+    try:
+        await ctx.message.add_reaction('❌')
+        await ctx.send(f'Error: ぬるぽ({str(error)}')
+    except:
+        await ctx.send(f'Error: ぬるぽ({ctx.author}, {str(error)})')
 
 
 @bot.command()
@@ -68,57 +107,20 @@ async def ai(ctx, *, prompt):
         prompt = await add_period(prompt)
         print('Modified Prompt: ' + prompt)
 
-    async with aiohttp.ClientSession() as session:
-        async with ctx.typing():
-            async with session.post(
-                'https://api.openai.com/v1/completions',
-                headers={
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + os.environ['OPENAI_API_KEY']
-                },
-                json={
-                    'model': 'text-davinci-003',
-                    'prompt': prompt,
-                    'max_tokens': 512,
-                    'temperature': 0.9,
-                    'top_p': 1,
-                    'n': 1
-                }
-            ) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    reply = [
-                        data['created'],
-                        data['model'],
-                        prompt,
-                        data['choices'][0]['text'],
-                        data['choices'][0]['finish_reason'],
-                        data['usage']['prompt_tokens'],
-                        data['usage']['completion_tokens'],
-                        data['usage']['total_tokens']
-                    ]
-                    try:
-                        await ctx.reply(reply[3])
-                        await ctx.message.remove_reaction('👀', bot.user)
-                        await ctx.message.add_reaction('✅')
-                    except:
-                        await ctx.send(
-                            '{ctx.author.mention}',
-                            '**質問:**',
-                            '{reply[2]}',
-                            '**回答:**',
-                            '{reply[3]}'
-                        )
-                    print('Reply: ' + reply[3])
-                else:
-                    reply = 'Error: ' + str(response.status)
-                    try:
-                        await ctx.reply(reply)
-                        await ctx.message.remove_reaction('👀', bot.user)
-                        await ctx.message.add_reaction('❌')
-                    except:
-                        await ctx.send(ctx.author.mention + reply)
-                    print('Reply: ' + reply)
+    async with ctx.typing():
+        reply = await get_answer(prompt)
+        if reply != None:
+            try:
+                await ctx.reply(reply[3])
+                await ctx.message.add_reaction('✅')
+                await ctx.message.remove_reaction('👀', bot.user)
+            except:
+                await ctx.send(ctx.author.mention + reply[3])
+        else:
+            await ctx.message.add_reaction('❌')
+            await ctx.message.remove_reaction('👀', bot.user)
+            return
+
     await write_csv(reply)
 
 
