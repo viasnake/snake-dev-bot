@@ -153,6 +153,7 @@ async def on_ready():
 @bot.event
 async def on_command_error(ctx, error):
     try:
+        await ctx.message.remove_reaction('👀', bot.user)
         await ctx.message.add_reaction('❌')
         await ctx.send(f'Error: {str(error)}')
     except:
