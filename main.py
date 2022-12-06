@@ -12,9 +12,9 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(
-    command_prefix = '!',
-    intents = intents,
-    help_command = None
+    command_prefix='!',
+    intents=intents,
+    help_command=None
 )
 
 
@@ -59,7 +59,7 @@ async def check_param(prompt):
         top_p = top_p.group(1)
         prompt = prompt.replace(f'top_p={top_p}', '')
     else:
-        top_p=1
+        top_p = 1
 
     print(
         f'model: {model}, max_tokens: {max_tokens}, temperature: {temperature}, top_p: {top_p}')
@@ -140,9 +140,9 @@ async def on_ready():
     print(discord.__version__)
     print('------')
     await bot.change_presence(
-        status = discord.Status.online,
-        activity = discord.Game(
-            name = f'AI'
+        status=discord.Status.online,
+        activity=discord.Game(
+            name=f'AI'
         )
     )
     print('Ready!')
@@ -184,7 +184,7 @@ async def ai(ctx, *, prompt):
         await ctx.message.add_reaction('❌')
         await ctx.message.remove_reaction('👀', bot.user)
         return
-    
+
     if not await is_valid_model(model):
         await ctx.reply('Error: Invalid model')
         await ctx.message.add_reaction('❌')
@@ -212,15 +212,15 @@ async def ai(ctx, *, prompt):
 async def help(ctx):
     await ctx.message.add_reaction('👀')
     embed = discord.Embed(
-        title = 'Help',
-        description = 'WIP',
-        color = 0x00ff00
+        title='Help',
+        description='WIP',
+        color=0x00ff00
     )
     embed.set_footer(
-        text = 'Made by snake#0232',
-        icon_url = 'https://cdn.discordapp.com/avatars/226674196112080896/8032fdc281918376bf55a35d8e67b24a.png'
+        text='Made by snake#0232',
+        icon_url='https://cdn.discordapp.com/avatars/226674196112080896/8032fdc281918376bf55a35d8e67b24a.png'
     )
-    await ctx.send(embed = embed)
+    await ctx.send(embed=embed)
     await ctx.message.add_reaction('✅')
     await ctx.message.remove_reaction('👀', bot.user)
 
