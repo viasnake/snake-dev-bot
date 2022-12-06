@@ -22,15 +22,12 @@ async def write_csv(content):
 
 
 async def add_period(text):
-    symbols = ['。', '．', '.', '․', '․', '、', '，',
-               ',', '！', '？', '!', '?', '︙', '︰', '…', '‥']
-    if not text.endswith(tuple(symbols)):
-        if re.search(r'[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]', text[-1]) != None:
-            text = text + '。'
-        elif re.search(r'[a-zA-Z]', text[-1]) != None:
-            text = text + '.'
-        else:
-            text = text + '.'
+    if re.search(r'[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]', text[-1]) != None:
+        text = text + '。'
+    elif re.search(r'[a-zA-Z]', text[-1]) != None:
+        text = text + '.'
+    else:
+        text = text + '.'
     return text
 
 
@@ -54,8 +51,10 @@ async def on_ready():
 async def ai(ctx, *, prompt):
     await ctx.message.add_reaction('👀')
     print('Prompt: ' + prompt)
-    prompt = await add_period(prompt)
-    print('Modified Prompt: ' + prompt)
+    if not prompt.endswith(('。', '．', '.', '․', '․', '、', '，', ',', '！', '？', '!', '?', '︙', '︰', '…', '‥')):
+        prompt = await add_period(prompt)
+        print('Modified Prompt: ' + prompt)
+
     async with aiohttp.ClientSession() as session:
         async with ctx.typing():
             async with session.post(
