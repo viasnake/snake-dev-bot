@@ -1,4 +1,5 @@
 import os
+import csv
 import aiohttp
 import time
 import discord
@@ -14,11 +15,11 @@ bot = commands.Bot(
 )
 
 
-async def write_csv(prompt, reply):
-    prompt = prompt.replace('\n', '')
-    reply = reply.replace('\n', '')
-    with open('log.csv', 'a', encoding='utf-8') as f:
-        f.write(f'{time.time()}, {prompt}, {reply}\n')
+async def write_csv(content):
+    with open('log.csv', 'a', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(content)
+
 
 
 @bot.event
