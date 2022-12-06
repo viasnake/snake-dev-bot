@@ -34,6 +34,14 @@ async def add_period(text):
 async def get_answer(prompt, model='text-davinci-003', max_tokens=512, temperature=0.9, top_p=1, n=1):
 
 
+async def is_valid_model(model):
+    models = await get_models()
+    if model in models:
+        return True
+    else:
+        return False
+
+
 async def get_models():
     async with aiohttp.ClientSession() as session:
         async with session.get(
