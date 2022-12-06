@@ -60,8 +60,8 @@ async def ai(ctx, *, prompt):
 
     if len(prompt) >= 128:
         await ctx.reply('Error: 128文字以上だよ({len(prompt)}文字)')
-        await ctx.message.remove_reaction('👀', bot.user)
         await ctx.message.add_reaction('❌')
+        await ctx.message.remove_reaction('👀', bot.user)
         return
 
     if not prompt.endswith(('。', '．', '.', '․', '․', '、', '，', ',', '！', '？', '!', '?', '︙', '︰', '…', '‥')):
@@ -135,31 +135,31 @@ async def help(ctx):
         icon_url='https://cdn.discordapp.com/avatars/226674196112080896/8032fdc281918376bf55a35d8e67b24a.png'
     )
     await ctx.send(embed=embed)
-    await ctx.message.remove_reaction('👀', bot.user)
     await ctx.message.add_reaction('✅')
+    await ctx.message.remove_reaction('👀', bot.user)
 
 
 @bot.command()
 async def ping(ctx):
     await ctx.message.add_reaction('👀')
     await ctx.send('Pong! {0}ms'.format(round(bot.latency * 1000, 1)))
-    await ctx.message.remove_reaction('👀', bot.user)
     await ctx.message.add_reaction('✅')
+    await ctx.message.remove_reaction('👀', bot.user)
 
 
 @bot.command()
 async def invite(ctx):
     await ctx.message.add_reaction('👀')
     await ctx.send('まだ無いよ')
-    await ctx.message.remove_reaction('👀', bot.user)
     await ctx.message.add_reaction('✅')
+    await ctx.message.remove_reaction('👀', bot.user)
 
 
 @bot.command()
 async def version(ctx):
     await ctx.message.add_reaction('👀')
     await ctx.send('???')
-    await ctx.message.remove_reaction('👀', bot.user)
     await ctx.message.add_reaction('✅')
+    await ctx.message.remove_reaction('👀', bot.user)
 
 bot.run(os.environ['DISCORD_BOT_TOKEN'])
