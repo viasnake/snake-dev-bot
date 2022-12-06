@@ -47,6 +47,12 @@ async def on_ready():
     print('Ready!')
 
 
+@bot.event
+async def on_command_error(ctx, error):
+    await ctx.message.add_reaction('❌')
+    await ctx.reply(f'Error: ぬるぽ({str(error)})')
+
+
 @bot.command()
 async def ai(ctx, *, prompt):
     await ctx.message.add_reaction('👀')
