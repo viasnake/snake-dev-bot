@@ -127,5 +127,13 @@ async def help(ctx):
     await ctx.message.add_reaction('✅')
 
 
+@bot.command()
+async def ping(ctx):
+    await ctx.message.add_reaction('👀')
+    await ctx.send('Pong! {0}ms'.format(round(bot.latency * 1000, 1)))
+    await ctx.message.remove_reaction('👀', bot.user)
+    await ctx.message.add_reaction('✅')
+
+
 
 bot.run(os.environ['DISCORD_BOT_TOKEN'])
