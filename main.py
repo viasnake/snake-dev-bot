@@ -42,8 +42,8 @@ async def on_ready():
         status=discord.Status.online,
         activity=discord.Game(
             name=f'AI'
-            )
         )
+    )
     print('Ready!')
 
 
