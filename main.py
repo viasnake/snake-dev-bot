@@ -1,4 +1,5 @@
 import os
+import re
 import csv
 import aiohttp
 import time
