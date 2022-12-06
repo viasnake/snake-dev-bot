@@ -2,7 +2,6 @@ import os
 import re
 import csv
 import aiohttp
-import time
 import discord
 from discord.ext import commands
 
