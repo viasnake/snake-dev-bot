@@ -32,6 +32,28 @@ async def add_period(text):
 
 
 async def get_answer(prompt, model='text-davinci-003', max_tokens=512, temperature=0.9, top_p=1, n=1):
+
+
+async def get_models():
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            'https://api.openai.com/v1/models',
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer {openai_key}',
+            }
+        ) as response:
+            if response.status == 200:
+                data = await response.json()
+                models = []
+                for model in data['data']['id']:
+                    models.append(model)
+                return models
+            else:
+                print('Error: ' + str(response.status))
+                return None
+
+
     async with aiohttp.ClientSession() as session:
         async with session.post(
             'https://api.openai.com/v1/completions',
