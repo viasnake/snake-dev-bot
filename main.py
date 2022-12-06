@@ -83,7 +83,7 @@ async def get_models():
             'https://api.openai.com/v1/models',
             headers={
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer {openai_key}',
+                'Authorization': 'Bearer {}'.format(openai_key),
             }
         ) as response:
             if response.status == 200:
@@ -103,7 +103,7 @@ async def get_answer(prompt, model, max_tokens, temperature, top_p):
             'https://api.openai.com/v1/completions',
             headers={
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer {openai_key}',
+                'Authorization': 'Bearer {}'.format(openai_key),
             },
             json={
                 'model': model,
