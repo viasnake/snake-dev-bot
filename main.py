@@ -89,8 +89,8 @@ async def get_models():
             if response.status == 200:
                 data = await response.json()
                 models = []
-                for model in data['data']['id']:
-                    models.append(model)
+                for model in data['data']:
+                    models.append(model['id'])
                 return models
             else:
                 print('Error: ' + str(response.status))
