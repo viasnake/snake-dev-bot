@@ -69,6 +69,8 @@ async def check_param(prompt):
 
 async def is_valid_model(model):
     models = await get_models()
+    if models == None:
+        return False
     if model in models:
         return True
     else:
