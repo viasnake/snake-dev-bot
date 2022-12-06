@@ -35,7 +35,7 @@ async def add_period(text):
 
 
 async def check_param(prompt):
-    model = re.search(r'model=(\w+)', prompt)
+    model = re.search(r'model=([0-9a-zA-Z\-]+)', prompt)
     max_tokens = re.search(r'max_tokens=(\d+)', prompt)
     temperature = re.search(r'temperature=(\d+(?:\.\d+)?)', prompt)
     top_p = re.search(r'top_p=(\d+(?:\.\d+)?)', prompt)
