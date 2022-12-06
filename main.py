@@ -13,7 +13,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 async def write_csv(prompt, reply):
     prompt = prompt.replace('\n', '')
     reply = reply.replace('\n', '')
-    with open('log.csv', 'a') as f:
+    with open('log.csv', 'a', encoding='utf-8') as f:
         f.write(f'{time.time()}, {prompt}, {reply}\n')
 
 
