@@ -21,6 +21,18 @@ async def write_csv(content):
         writer.writerow(content)
 
 
+async def add_period(text):
+    symbols = ['。', '．', '.', '․', '․', '、', '，',
+               ',', '！', '？', '!', '?', '︙', '︰', '…', '‥']
+    if not text.endswith(tuple(symbols)):
+        if re.search(r'[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]', text[-1]) != None:
+            text = text + '。'
+        elif re.search(r'[a-zA-Z]', text[-1]) != None:
+            text = text + '.'
+        else:
+            text = text + '.'
+    return text
+
 
 @bot.event
 async def on_ready():
