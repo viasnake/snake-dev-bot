@@ -165,14 +165,13 @@ async def ai(ctx, *, prompt):
     print('Prompt: ' + prompt)
     modified = False
 
-    if prompt.search(r'model=(\w+)|max_tokens=(\d+)|temperature=(\d+(?:\.\d+)?)|top_p=(\d+(?:\.\d+)?)') != None:
-        params = await check_param(prompt)
-        prompt = params[0]
-        model = params[1]
-        max_tokens = params[2]
-        temperature = params[3]
-        top_p = params[4]
-        modified = True
+    params = await check_param(prompt)
+    prompt = params[0]
+    model = params[1]
+    max_tokens = params[2]
+    temperature = params[3]
+    top_p = params[4]
+    modified = True
 
     if not prompt.endswith(('。', '．', '.', '․', '․', '、', '，', ',', '！', '？', '!', '?', '︙', '︰', '…', '‥')):
         prompt = await add_period(prompt)
