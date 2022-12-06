@@ -5,13 +5,16 @@ import aiohttp
 import discord
 from discord.ext import commands
 
+openai_key = os.environ['OPENAI_KEY']
+discord_token = os.environ['DISCORD_TOKEN']
+
 intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(
-    command_prefix='!',
-    intents=intents,
-    help_command=None
+    command_prefix = '!',
+    intents = intents,
+    help_command = None
 )
 
 
@@ -31,7 +34,37 @@ async def add_period(text):
     return text
 
 
-async def get_answer(prompt, model='text-davinci-003', max_tokens=512, temperature=0.9, top_p=1, n=1):
+async def check_param(prompt):
+    model = re.search(r'model=(\w+)', prompt)
+    max_tokens = re.search(r'max_tokens=(\d+)', prompt)
+    temperature = re.search(r'temperature=(\d+(?:\.\d+)?)', prompt)
+    top_p = re.search(r'top_p=(\d+(?:\.\d+)?)', prompt)
+
+    if model != None:
+        model = model.group(1)
+        prompt = prompt.replace(f'model={model}', '')
+    else:
+        model = 'text-davinci-003'
+    if max_tokens != None:
+        max_tokens = max_tokens.group(1)
+        prompt = prompt.replace(f'max_tokens={max_tokens}', '')
+    else:
+        max_tokens = 512
+    if temperature != None:
+        temperature = temperature.group(1)
+        prompt = prompt.replace(f'temperature={temperature}', '')
+    else:
+        temperature = 0.9
+    if top_p != None:
+        top_p = top_p.group(1)
+        prompt = prompt.replace(f'top_p={top_p}', '')
+    else:
+        top_p=1
+
+    print(
+        f'model: {model}, max_tokens: {max_tokens}, temperature: {temperature}, top_p: {top_p}')
+
+    return [prompt, model, max_tokens, temperature, top_p]
 
 
 async def is_valid_model(model):
@@ -62,20 +95,21 @@ async def get_models():
                 return None
 
 
+async def get_answer(prompt, model, max_tokens, temperature, top_p):
     async with aiohttp.ClientSession() as session:
         async with session.post(
             'https://api.openai.com/v1/completions',
             headers={
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + os.environ['OPENAI_API_KEY']
+                'Authorization': 'Bearer {openai_key}',
             },
             json={
                 'model': model,
                 'prompt': prompt,
-                'max_tokens': max_tokens,
+                'max_tokens': 512,  # max_tokens,
                 'temperature': temperature,
                 'top_p': top_p,
-                'n': n
+                'n': 1,
             }
         ) as response:
             print('Response_status: ' + str(response.status))
@@ -97,6 +131,7 @@ async def get_models():
                 print('Error: ' + str(response.status))
                 return None
 
+
 @bot.event
 async def on_ready():
     print('Logged in as')
@@ -105,9 +140,9 @@ async def on_ready():
     print(discord.__version__)
     print('------')
     await bot.change_presence(
-        status=discord.Status.online,
-        activity=discord.Game(
-            name=f'AI'
+        status = discord.Status.online,
+        activity = discord.Game(
+            name = f'AI'
         )
     )
     print('Ready!')
@@ -117,28 +152,47 @@ async def on_ready():
 async def on_command_error(ctx, error):
     try:
         await ctx.message.add_reaction('❌')
-        await ctx.send(f'Error: ぬるぽ({str(error)}')
+        await ctx.send(f'Error: {str(error)}')
     except:
-        await ctx.send(f'Error: ぬるぽ({ctx.author}, {str(error)})')
+        await ctx.send(f'Error: {ctx.author}, {str(error)}')
 
 
 @bot.command()
 async def ai(ctx, *, prompt):
     await ctx.message.add_reaction('👀')
     print('Prompt: ' + prompt)
+    modified = False
+
+    if prompt.search(r'model=(\w+)|max_tokens=(\d+)|temperature=(\d+(?:\.\d+)?)|top_p=(\d+(?:\.\d+)?)') != None:
+        params = await check_param(prompt)
+        prompt = params[0]
+        model = params[1]
+        max_tokens = params[2]
+        temperature = params[3]
+        top_p = params[4]
+        modified = True
+
+    if not prompt.endswith(('。', '．', '.', '․', '․', '、', '，', ',', '！', '？', '!', '?', '︙', '︰', '…', '‥')):
+        prompt = await add_period(prompt)
+        modified = True
+
+    if modified:
+        print('Modified Prompt: ' + prompt)
 
     if len(prompt) >= 128:
-        await ctx.reply('Error: 128文字以上だよ({len(prompt)}文字)')
+        await ctx.reply('Error: Prompt too long({len(prompt)} characters)')
+        await ctx.message.add_reaction('❌')
+        await ctx.message.remove_reaction('👀', bot.user)
+        return
+    
+    if not await is_valid_model(model):
+        await ctx.reply('Error: Invalid model')
         await ctx.message.add_reaction('❌')
         await ctx.message.remove_reaction('👀', bot.user)
         return
 
-    if not prompt.endswith(('。', '．', '.', '․', '․', '、', '，', ',', '！', '？', '!', '?', '︙', '︰', '…', '‥')):
-        prompt = await add_period(prompt)
-        print('Modified Prompt: ' + prompt)
-
     async with ctx.typing():
-        reply = await get_answer(prompt)
+        reply = await get_answer(prompt, model, max_tokens, temperature, top_p)
         if reply != None:
             try:
                 await ctx.reply(reply[3])
@@ -158,15 +212,15 @@ async def ai(ctx, *, prompt):
 async def help(ctx):
     await ctx.message.add_reaction('👀')
     embed = discord.Embed(
-        title='Help',
-        description='そんなもんはねえよ',
-        color=0x00ff00
+        title = 'Help',
+        description = 'WIP',
+        color = 0x00ff00
     )
     embed.set_footer(
-        text='Made by snake#0232',
-        icon_url='https://cdn.discordapp.com/avatars/226674196112080896/8032fdc281918376bf55a35d8e67b24a.png'
+        text = 'Made by snake#0232',
+        icon_url = 'https://cdn.discordapp.com/avatars/226674196112080896/8032fdc281918376bf55a35d8e67b24a.png'
     )
-    await ctx.send(embed=embed)
+    await ctx.send(embed = embed)
     await ctx.message.add_reaction('✅')
     await ctx.message.remove_reaction('👀', bot.user)
 
@@ -182,7 +236,7 @@ async def ping(ctx):
 @bot.command()
 async def invite(ctx):
     await ctx.message.add_reaction('👀')
-    await ctx.send('まだ無いよ')
+    await ctx.send('WIP')
     await ctx.message.add_reaction('✅')
     await ctx.message.remove_reaction('👀', bot.user)
 
@@ -190,8 +244,9 @@ async def invite(ctx):
 @bot.command()
 async def version(ctx):
     await ctx.message.add_reaction('👀')
-    await ctx.send('???')
+    await ctx.send('WIP')
     await ctx.message.add_reaction('✅')
     await ctx.message.remove_reaction('👀', bot.user)
 
-bot.run(os.environ['DISCORD_BOT_TOKEN'])
+
+bot.run(discord_token)
