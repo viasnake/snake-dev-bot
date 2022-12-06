@@ -135,5 +135,13 @@ async def ping(ctx):
     await ctx.message.add_reaction('✅')
 
 
+@bot.command()
+async def invite(ctx):
+    await ctx.message.add_reaction('👀')
+    await ctx.send('まだ無いよ')
+    await ctx.message.remove_reaction('👀', bot.user)
+    await ctx.message.add_reaction('✅')
+
+
 
 bot.run(os.environ['DISCORD_BOT_TOKEN'])
