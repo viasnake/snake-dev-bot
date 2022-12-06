@@ -110,5 +110,22 @@ async def ai(ctx, *, prompt):
     await write_csv(reply)
 
 
+@bot.command()
+async def help(ctx):
+    await ctx.message.add_reaction('👀')
+    embed = discord.Embed(
+        title='Help',
+        description='そんなもんはねえよ',
+        color=0x00ff00
+    )
+    embed.set_footer(
+        text='Made by snake#0232',
+        icon_url='https://cdn.discordapp.com/avatars/226674196112080896/8032fdc281918376bf55a35d8e67b24a.png'
+    )
+    await ctx.send(embed=embed)
+    await ctx.message.remove_reaction('👀', bot.user)
+    await ctx.message.add_reaction('✅')
+
+
 
 bot.run(os.environ['DISCORD_BOT_TOKEN'])
