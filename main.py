@@ -106,11 +106,11 @@ async def get_answer(prompt, model, max_tokens, temperature, top_p):
                 'Authorization': 'Bearer {}'.format(openai_key),
             },
             json={
-                'model': model,
-                'prompt': prompt,
+                'model': str(model),
+                'prompt': str(prompt),
                 'max_tokens': 512,  # max_tokens,
-                'temperature': temperature,
-                'top_p': top_p,
+                'temperature': float(temperature),
+                'top_p': float(top_p),
                 'n': 1,
             }
         ) as response:
@@ -178,6 +178,8 @@ async def ai(ctx, *, prompt):
         prompt = await add_period(prompt)
         modified = True
 
+    prompt = prompt.strip()
+    
     if modified:
         print('Modified Prompt: ' + prompt)
 
