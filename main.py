@@ -84,7 +84,8 @@ async def is_valid_model(model):
 
 
 async def is_url(text):
-    url = re.search(r'^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$', text)
+    url = re.search(
+        r'^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$', text)
     if url != None:
         return True
     else:
@@ -344,11 +345,13 @@ async def img(ctx, *, prompt):
 @bot.command()
 async def help(ctx):
     await ctx.message.add_reaction('👀')
-    embed = discord.Embed(
-        title='Help',
-        description='WIP',
-        color=0x00ff00
-    )
+    embed=discord.Embed(title='Help', description='snakeの研究用Botです。頻繁にアップデートが入り機能が大幅に変更されます。\n自宅のラズパイが死ななければ24時間稼働します。\n維持コストはタダじゃないので、使いすぎないようにしてくれると嬉しいです。\n蛇の財布次第で機能が制限されます。', color=0x00ff00)
+    embed.add_field(name='!ai', value='Generates text. Usage: `!ai [prompt]`', inline=False)
+    embed.add_field(name='!img', value='Generates an image. Usage: `!img [prompt]`', inline=False)
+    embed.add_field(name='!ping', value='Pong!', inline=False)
+    embed.add_field(name='!invite', value='Invite the bot to your server!', inline=False)
+    embed.add_field(name='!help', value='Shows this message.', inline=False)
+    embed.add_field(name='!version', value='Shows the bot\'s version.', inline=False)
     embed.set_footer(
         text='Made by snake#0232',
         icon_url='https://cdn.discordapp.com/avatars/226674196112080896/8032fdc281918376bf55a35d8e67b24a.png'
@@ -369,7 +372,7 @@ async def ping(ctx):
 @bot.command()
 async def invite(ctx):
     await ctx.message.add_reaction('👀')
-    await ctx.send('WIP')
+    await ctx.send('Private bot, sorry!')
     await ctx.message.add_reaction('✅')
     await ctx.message.remove_reaction('👀', bot.user)
 
@@ -377,7 +380,7 @@ async def invite(ctx):
 @bot.command()
 async def version(ctx):
     await ctx.message.add_reaction('👀')
-    await ctx.send('WIP')
+    await ctx.send('Version: 1.0.0')
     await ctx.message.add_reaction('✅')
     await ctx.message.remove_reaction('👀', bot.user)
 
