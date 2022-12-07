@@ -161,16 +161,45 @@ async def chatgpt(prompt):
     answer = await loop.run_in_executor(None, chat.ask, prompt)
     reply = [
         time.time(),
-        "chatgpt",
+        'chatgpt',
         prompt,
         answer,
-        "None",
-        "None",
-        "None",
-        "None"
+        'None',
+        'None',
+        'None',
+        'None'
     ]
     print('Reply: ' + reply[3])
     return reply
+
+
+async def get_image(prompt):
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            'https://api.openai.com/v1/images/generations',
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer {}'.format(openai_key),
+            },
+            json={
+                'prompt': str(prompt),
+                'n': 1,
+                'size': '256x256'
+            }
+        ) as response:
+            if response.status == 200:
+                data = await response.json()
+                reply = [
+                    data['created'],
+                    'image',
+                    prompt,
+                    data['data'][0]['url']
+                ]
+                print('Reply: ' + reply[1])
+                return reply
+            else:
+                print('Error: ' + str(response.status))
+                return None
 
 
 @bot.event
@@ -217,7 +246,6 @@ async def ai(ctx, *, prompt):
         prompt = await add_period(prompt)
         modified = True
 
-
     prompt = prompt.strip()
 
     if modified:
@@ -250,6 +278,49 @@ async def ai(ctx, *, prompt):
                 await ctx.message.remove_reaction('👀', bot.user)
             except:
                 await ctx.send(ctx.author.mention + reply[3])
+        else:
+            await ctx.message.add_reaction('❌')
+            await ctx.message.remove_reaction('👀', bot.user)
+            return
+
+    await write_csv(reply)
+
+
+@bot.command()
+async def img(ctx, *, prompt):
+    await ctx.message.add_reaction('👀')
+    print('Prompt: ' + prompt)
+
+    prompt = prompt.strip()
+
+    if len(prompt) >= 1000:
+        await ctx.reply('Error: Prompt too long({len(prompt)} characters)')
+        await ctx.message.add_reaction('❌')
+        await ctx.message.remove_reaction('👀', bot.user)
+        return
+
+    if await is_url(prompt):
+        await ctx.reply('Error: Prompt is URL')
+        await ctx.message.add_reaction('❌')
+        await ctx.message.remove_reaction('👀', bot.user)
+        return
+
+    async with ctx.typing():
+        reply = await get_image(prompt)
+        if reply != None:
+            try:
+                embed=discord.Embed(title='Image generation', description='{}'.format(reply[2]), color=0x00ff00)
+                embed.set_image(url='{}'.format(reply[3]))
+                embed.set_footer(text='OpenAI')
+                await ctx.reply(embed=embed)
+                await ctx.message.add_reaction('✅')
+                await ctx.message.remove_reaction('👀', bot.user)
+            except:
+                embed=discord.Embed(title='Image generation', description='{}'.format(reply[2]), color=0x00ff00)
+                embed.set_image(url='{}'.format(reply[3]))
+                embed.set_footer(text='OpenAI')
+                await ctx.send(ctx.author.mention)
+                await ctx.send(embed=embed)
         else:
             await ctx.message.add_reaction('❌')
             await ctx.message.remove_reaction('👀', bot.user)
