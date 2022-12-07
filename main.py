@@ -234,13 +234,25 @@ async def ai(ctx, *, prompt):
     print('Prompt: ' + prompt)
     modified = False
 
-    params = await check_param(prompt)
-    prompt = params[0]
-    model = params[1]
-    max_tokens = params[2]
-    temperature = params[3]
-    top_p = params[4]
-    modified = True
+    if re.match(r'model=([0-9a-zA-Z\-]+)|max_tokens=(\d+)|temperature=(\d+(?:\.\d+)?)|top_p=(\d+(?:\.\d+)?)', prompt):
+        if ctx.author.id == 226674196112080896:
+            params = await check_param(prompt)
+            prompt = params[0]
+            model = params[1]
+            max_tokens = params[2]
+            temperature = params[3]
+            top_p = params[4]
+            modified = True
+        else:
+            await ctx.reply('Error: You do not have permission to use parameters')
+            await ctx.message.add_reaction('❌')
+            await ctx.message.remove_reaction('👀', bot.user)
+            return
+    else:
+        model = 'text-davinci-003'
+        max_tokens = 512
+        temperature = 0.9
+        top_p = 1
 
     if not prompt.endswith(('。', '．', '.', '․', '․', '、', '，', ',', '！', '？', '!', '?', '︙', '︰', '…', '‥')):
         prompt = await add_period(prompt)
