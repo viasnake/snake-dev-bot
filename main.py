@@ -4,7 +4,7 @@ import csv
 import aiohttp
 import asyncio
 import time
-from pychatgpt import Chat
+#from pychatgpt import Chat
 import discord
 from discord.ext import commands
 
@@ -74,7 +74,7 @@ async def check_param(prompt):
 
 async def is_valid_model(model):
     models = await get_models()
-    models.append('chatgpt')
+    # models.append('chatgpt')
     if models == None:
         return False
     if model in models:
@@ -284,5 +284,5 @@ async def version(ctx):
     await ctx.message.remove_reaction('👀', bot.user)
 
 
-chat = Chat(email=chatgpt_email, password=chatgpt_password)
+# chat = Chat(email=chatgpt_email, password=chatgpt_password)
 bot.run(discord_token)
