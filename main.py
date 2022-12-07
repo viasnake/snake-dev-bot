@@ -83,6 +83,14 @@ async def is_valid_model(model):
         return False
 
 
+async def is_url(text):
+    url = re.search(r'^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$', text)
+    if url != None:
+        return True
+    else:
+        return False
+
+
 async def get_models():
     async with aiohttp.ClientSession() as session:
         async with session.get(
@@ -209,6 +217,7 @@ async def ai(ctx, *, prompt):
         prompt = await add_period(prompt)
         modified = True
 
+
     prompt = prompt.strip()
 
     if modified:
@@ -222,6 +231,12 @@ async def ai(ctx, *, prompt):
 
     if not await is_valid_model(model):
         await ctx.reply('Error: Invalid model')
+        await ctx.message.add_reaction('❌')
+        await ctx.message.remove_reaction('👀', bot.user)
+        return
+
+    if await is_url(prompt):
+        await ctx.reply('Error: Prompt is URL')
         await ctx.message.add_reaction('❌')
         await ctx.message.remove_reaction('👀', bot.user)
         return
