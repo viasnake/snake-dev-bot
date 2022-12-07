@@ -44,7 +44,7 @@ async def check_param(prompt):
         model = model.group(1)
         prompt = prompt.replace(f'model={model}', '')
     else:
-        model = 'text-davinci-003'
+        model = 'text-curie-001'
     if max_tokens != None:
         max_tokens = max_tokens.group(1)
         prompt = prompt.replace(f'max_tokens={max_tokens}', '')
