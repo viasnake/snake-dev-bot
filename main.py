@@ -2,11 +2,16 @@ import os
 import re
 import csv
 import aiohttp
+import asyncio
+import time
+from pychatgpt import Chat
 import discord
 from discord.ext import commands
 
 openai_key = os.environ['OPENAI_KEY']
 discord_token = os.environ['DISCORD_TOKEN']
+chatgpt_email = os.environ['CHATGPT_EMAIL']
+chatgpt_password = os.environ['CHATGPT_PASSWORD']
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -69,6 +74,7 @@ async def check_param(prompt):
 
 async def is_valid_model(model):
     models = await get_models()
+    models.append('chatgpt')
     if models == None:
         return False
     if model in models:
@@ -98,6 +104,14 @@ async def get_models():
 
 
 async def get_answer(prompt, model, max_tokens, temperature, top_p):
+    if model == 'chatgpt':
+        reply = await chatgpt(prompt)
+    else:
+        reply = await openai(prompt, model, max_tokens, temperature, top_p)
+    return reply
+
+
+async def openai(prompt, model, max_tokens, temperature, top_p):
     async with aiohttp.ClientSession() as session:
         async with session.post(
             'https://api.openai.com/v1/completions',
@@ -132,6 +146,23 @@ async def get_answer(prompt, model, max_tokens, temperature, top_p):
             else:
                 print('Error: ' + str(response.status))
                 return None
+
+
+async def chatgpt(prompt):
+    loop = asyncio.get_event_loop()
+    answer = await loop.run_in_executor(None, chat.ask, prompt)
+    reply = [
+        time.time(),
+        "chatgpt",
+        prompt,
+        answer,
+        "None",
+        "None",
+        "None",
+        "None"
+    ]
+    print('Reply: ' + reply[3])
+    return reply
 
 
 @bot.event
@@ -179,7 +210,7 @@ async def ai(ctx, *, prompt):
         modified = True
 
     prompt = prompt.strip()
-    
+
     if modified:
         print('Modified Prompt: ' + prompt)
 
@@ -253,4 +284,5 @@ async def version(ctx):
     await ctx.message.remove_reaction('👀', bot.user)
 
 
+chat = Chat(email=chatgpt_email, password=chatgpt_password)
 bot.run(discord_token)
