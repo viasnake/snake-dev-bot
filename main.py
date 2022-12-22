@@ -4,14 +4,11 @@ import csv
 import aiohttp
 import asyncio
 import time
-#from pychatgpt import Chat
 import discord
 from discord.ext import commands
 
 openai_key = os.environ['OPENAI_KEY']
 discord_token = os.environ['DISCORD_TOKEN']
-chatgpt_email = os.environ['CHATGPT_EMAIL']
-chatgpt_password = os.environ['CHATGPT_PASSWORD']
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -23,8 +20,14 @@ bot = commands.Bot(
 )
 
 
-async def write_csv(content):
+async def write_reply(content):
     with open('log.csv', 'a', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(content)
+
+
+async def write_log(content):
+    with open('error.csv', 'a', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(content)
 
@@ -74,7 +77,6 @@ async def check_param(prompt):
 
 async def is_valid_model(model):
     models = await get_models()
-    # models.append('chatgpt')
     if models == None:
         return False
     if model in models:
@@ -113,10 +115,7 @@ async def get_models():
 
 
 async def get_answer(prompt, model, max_tokens, temperature, top_p):
-    if model == 'chatgpt':
-        reply = await chatgpt(prompt)
-    else:
-        reply = await openai(prompt, model, max_tokens, temperature, top_p)
+    reply = await openai(prompt, model, max_tokens, temperature, top_p)
     return reply
 
 
@@ -131,7 +130,7 @@ async def openai(prompt, model, max_tokens, temperature, top_p):
             json={
                 'model': str(model),
                 'prompt': str(prompt),
-                'max_tokens': 512,  # max_tokens,
+                'max_tokens': int(max_tokens),
                 'temperature': float(temperature),
                 'top_p': float(top_p),
                 'n': 1,
@@ -155,23 +154,6 @@ async def openai(prompt, model, max_tokens, temperature, top_p):
             else:
                 print('Error: ' + str(response.status))
                 return None
-
-
-async def chatgpt(prompt):
-    loop = asyncio.get_event_loop()
-    answer = await loop.run_in_executor(None, chat.ask, prompt)
-    reply = [
-        time.time(),
-        'chatgpt',
-        prompt,
-        answer,
-        'None',
-        'None',
-        'None',
-        'None'
-    ]
-    print('Reply: ' + reply[3])
-    return reply
 
 
 async def get_image(prompt):
@@ -198,6 +180,40 @@ async def get_image(prompt):
                 ]
                 print('Reply: ' + reply[1])
                 return reply
+            else:
+                print('Error: ' + str(response.status))
+                return None
+
+
+async def is_flagged(text):
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            'https://api.openai.com/v1/moderations',
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer {}'.format(openai_key),
+            },
+            json={
+                'input': str(text),
+                'model': 'text-moderation-latest'
+            }
+        ) as response:
+            if response.status == 200:
+                data = await response.json()
+                reply = [
+                    time.time(),
+                    'moderation',
+                    text,
+                    data['results'][0]['flagged']
+                ]
+                for category in data['results'][0]['categories']:
+                    reply.append(category)
+                    reply.append(data['results'][0]['categories'][category])
+                    reply.append(data['results'][0]['category_scores'][category])
+                print('Flagged: ' + str(reply[3]))
+                if reply[3] == True:
+                    await write_log(reply)
+                return reply[3]
             else:
                 print('Error: ' + str(response.status))
                 return None
@@ -255,7 +271,7 @@ async def ai(ctx, *, prompt):
         temperature = 0.9
         top_p = 1
 
-    if not prompt.endswith(('。', '．', '.', '․', '․', '、', '，', ',', '！', '？', '!', '?', '︙', '︰', '…', '‥')):
+    if not prompt.endswith(('。', '．', '.', '、', '，', ',', '！', '？', '!', '?', '︙', '︰', '…', '‥')):
         prompt = await add_period(prompt)
         modified = True
 
@@ -265,7 +281,7 @@ async def ai(ctx, *, prompt):
         print('Modified Prompt: ' + prompt)
 
     if len(prompt) >= 128:
-        await ctx.reply('Error: Prompt too long({len(prompt)} characters)')
+        await ctx.reply('Error: Prompt too long({} characters)'.format(len(prompt)))
         await ctx.message.add_reaction('❌')
         await ctx.message.remove_reaction('👀', bot.user)
         return
@@ -278,6 +294,18 @@ async def ai(ctx, *, prompt):
 
     if await is_url(prompt):
         await ctx.reply('Error: Prompt is URL')
+        await ctx.message.add_reaction('❌')
+        await ctx.message.remove_reaction('👀', bot.user)
+        return
+
+    flag = await is_flagged(prompt)
+    if flag == True:
+        await ctx.reply('Error: Prompt has been marked as violated\nYour prompt has been reported and recorded.')
+        await ctx.message.add_reaction('❌')
+        await ctx.message.remove_reaction('👀', bot.user)
+        return
+    elif flag == None:
+        await ctx.reply('Error: Failed to check prompt')
         await ctx.message.add_reaction('❌')
         await ctx.message.remove_reaction('👀', bot.user)
         return
@@ -296,7 +324,7 @@ async def ai(ctx, *, prompt):
             await ctx.message.remove_reaction('👀', bot.user)
             return
 
-    await write_csv(reply)
+    await write_reply(reply)
 
 
 @bot.command()
@@ -306,8 +334,14 @@ async def img(ctx, *, prompt):
 
     prompt = prompt.strip()
 
+    if ctx.author.id != 226674196112080896:
+        await ctx.reply('Error: You do not have permission to use parameters')
+        await ctx.message.add_reaction('❌')
+        await ctx.message.remove_reaction('👀', bot.user)
+        return
+
     if len(prompt) >= 1000:
-        await ctx.reply('Error: Prompt too long({len(prompt)} characters)')
+        await ctx.reply('Error: Prompt too long({} characters)'.format(len(prompt)))
         await ctx.message.add_reaction('❌')
         await ctx.message.remove_reaction('👀', bot.user)
         return
@@ -318,18 +352,32 @@ async def img(ctx, *, prompt):
         await ctx.message.remove_reaction('👀', bot.user)
         return
 
+    flag = await is_flagged(prompt)
+    if flag == True:
+        await ctx.reply('Error: Prompt has been marked as violated\nYour prompt has been reported and recorded.')
+        await ctx.message.add_reaction('❌')
+        await ctx.message.remove_reaction('👀', bot.user)
+        return
+    elif flag == None:
+        await ctx.reply('Error: Failed to check prompt')
+        await ctx.message.add_reaction('❌')
+        await ctx.message.remove_reaction('👀', bot.user)
+        return
+
     async with ctx.typing():
         reply = await get_image(prompt)
         if reply != None:
             try:
-                embed=discord.Embed(title='Image generation', description='{}'.format(reply[2]), color=0x00ff00)
+                embed = discord.Embed(
+                    title='Image generation', description='{}'.format(reply[2]), color=0x00ff00)
                 embed.set_image(url='{}'.format(reply[3]))
                 embed.set_footer(text='OpenAI')
                 await ctx.reply(embed=embed)
                 await ctx.message.add_reaction('✅')
                 await ctx.message.remove_reaction('👀', bot.user)
             except:
-                embed=discord.Embed(title='Image generation', description='{}'.format(reply[2]), color=0x00ff00)
+                embed = discord.Embed(
+                    title='Image generation', description='{}'.format(reply[2]), color=0x00ff00)
                 embed.set_image(url='{}'.format(reply[3]))
                 embed.set_footer(text='OpenAI')
                 await ctx.send(ctx.author.mention)
@@ -339,19 +387,24 @@ async def img(ctx, *, prompt):
             await ctx.message.remove_reaction('👀', bot.user)
             return
 
-    await write_csv(reply)
+    await write_reply(reply)
 
 
 @bot.command()
 async def help(ctx):
     await ctx.message.add_reaction('👀')
-    embed=discord.Embed(title='Help', description='snakeの研究用Botです。頻繁にアップデートが入り機能が大幅に変更されます。\n自宅のラズパイが死ななければ24時間稼働します。\n維持コストはタダじゃないので、使いすぎないようにしてくれると嬉しいです。\n蛇の財布次第で機能が制限されます。', color=0x00ff00)
-    embed.add_field(name='!ai', value='Generates text. Usage: `!ai [prompt]`', inline=False)
-    embed.add_field(name='!img', value='Generates an image. Usage: `!img [prompt]`', inline=False)
+    embed = discord.Embed(
+        title='Help', description='snakeの研究用Botです。頻繁にアップデートが入り機能が大幅に変更されます。\n自宅のラズパイが死ななければ24時間稼働します。\n維持コストはタダじゃないので、使いすぎないようにしてくれると嬉しいです。\n蛇の財布次第で機能が制限されます。', color=0x00ff00)
+    embed.add_field(
+        name='!ai', value='Generates text. Usage: `!ai [prompt]`', inline=False)
+    embed.add_field(
+        name='!img', value='Generates an image. Usage: `!img [prompt]` Devs only.', inline=False)
     embed.add_field(name='!ping', value='Pong!', inline=False)
-    embed.add_field(name='!invite', value='Invite the bot to your server!', inline=False)
+    embed.add_field(
+        name='!invite', value='Invite the bot to your server!', inline=False)
     embed.add_field(name='!help', value='Shows this message.', inline=False)
-    embed.add_field(name='!version', value='Shows the bot\'s version.', inline=False)
+    embed.add_field(name='!version',
+                    value='Shows the bot\'s version.', inline=False)
     embed.set_footer(
         text='Made by snake#0232',
         icon_url='https://cdn.discordapp.com/avatars/226674196112080896/8032fdc281918376bf55a35d8e67b24a.png'
