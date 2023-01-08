@@ -3,12 +3,36 @@ import re
 import csv
 import aiohttp
 import asyncio
+import youtube_dl
 import time
 import discord
 from discord.ext import commands
 
 openai_key = os.environ['OPENAI_KEY']
 discord_token = os.environ['DISCORD_TOKEN']
+
+youtube_dl.utils.bug_reports_message = lambda: ''
+
+
+ytdl_format_options = {
+    'format': 'bestaudio/best',
+    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'restrictfilenames': True,
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    'ignoreerrors': False,
+    'logtostderr': False,
+    'quiet': True,
+    'no_warnings': True,
+    'default_search': 'auto',
+    'source_address': '0.0.0.0',  # bind to ipv4 since ipv6 addresses cause issues sometimes
+}
+
+ffmpeg_options = {
+    'options': '-vn',
+}
+
+ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -18,6 +42,28 @@ bot = commands.Bot(
     intents=intents,
     help_command=None
 )
+
+
+class YTDLSource(discord.PCMVolumeTransformer):
+    def __init__(self, source, *, data, volume=0.5):
+        super().__init__(source, volume)
+
+        self.data = data
+
+        self.title = data.get('title')
+        self.url = data.get('url')
+
+    @classmethod
+    async def from_url(cls, url, *, loop=None, stream=False):
+        loop = loop or asyncio.get_event_loop()
+        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
+
+        if 'entries' in data:
+            # take first item from a playlist
+            data = data['entries'][0]
+
+        filename = data['url'] if stream else ytdl.prepare_filename(data)
+        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
 
 async def write_reply(content):
@@ -209,7 +255,8 @@ async def is_flagged(text):
                 for category in data['results'][0]['categories']:
                     reply.append(category)
                     reply.append(data['results'][0]['categories'][category])
-                    reply.append(data['results'][0]['category_scores'][category])
+                    reply.append(data['results'][0]
+                                 ['category_scores'][category])
                 print('Flagged: ' + str(reply[3]))
                 if reply[3] == True:
                     await write_log(reply)
@@ -244,6 +291,32 @@ async def on_command_error(ctx, error):
     except:
         await ctx.send(f'Error: {ctx.author}, {str(error)}')
 
+@bot.command()
+async def join(ctx):
+    if ctx.author.voice is None:
+        await ctx.send("You are not connected to a voice channel.")
+        return
+    await ctx.author.voice.channel.connect()
+
+@bot.command()
+async def play(ctx, *, url):
+    async with ctx.typing():
+        player = await YTDLSource.from_url(url, loop=bot.loop, stream=True)
+        ctx.voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
+
+    await ctx.send(f'Now playing: {player.title}')
+
+@bot.command()
+async def volume(ctx, volume: int):
+    if ctx.voice_client is None:
+        return await ctx.send("Not connected to a voice channel.")
+
+    ctx.voice_client.source.volume = volume / 100
+    await ctx.send(f"Changed volume to {volume}%")
+
+@bot.command()
+async def stop(ctx):
+    await ctx.voice_client.disconnect()
 
 @bot.command()
 async def ai(ctx, *, prompt):
@@ -405,6 +478,7 @@ async def help(ctx):
     embed.add_field(name='!help', value='Shows this message.', inline=False)
     embed.add_field(name='!version',
                     value='Shows the bot\'s version.', inline=False)
+    embed.add_field(name='!play', value='Play YouTube video. Usage: `!play [YouTube URL]`', inline=False)
     embed.set_footer(
         text='Made by snake#0232',
         icon_url='https://cdn.discordapp.com/avatars/226674196112080896/8032fdc281918376bf55a35d8e67b24a.png'
