@@ -300,6 +300,10 @@ async def join(ctx):
 
 @bot.command()
 async def play(ctx, *, url):
+    if ctx.author.voice is None:
+        await ctx.send("You are not connected to a voice channel.")
+        return
+
     async with ctx.typing():
         player = await YTDLSource.from_url(url, loop=bot.loop, stream=True)
         ctx.voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
