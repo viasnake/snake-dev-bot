@@ -482,7 +482,9 @@ async def help(ctx):
     embed.add_field(name='!help', value='Shows this message.', inline=False)
     embed.add_field(name='!version',
                     value='Shows the bot\'s version.', inline=False)
+    embed.add_field(name='!join', value='Join the voice channel.', inline=False)
     embed.add_field(name='!play', value='Play YouTube video. Usage: `!play [YouTube URL]`', inline=False)
+    embed.add_field(name='!stop', value='Stop playing music.', inline=False)
     embed.set_footer(
         text='Made by snake#0232',
         icon_url='https://cdn.discordapp.com/avatars/226674196112080896/8032fdc281918376bf55a35d8e67b24a.png'
